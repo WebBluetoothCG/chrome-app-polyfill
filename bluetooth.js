@@ -17,6 +17,9 @@ limitations under the License.
 (function () {
 'use strict';
 
+var importDocument = document.currentScript.ownerDocument;
+var uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
+
 // https://webbluetoothcg.github.io/web-bluetooth/ interface
 function BluetoothDevice(chromeDeviceAddress) {
   this._address = chromeDeviceAddress;
@@ -276,6 +279,42 @@ BluetoothGattDescriptor.prototype = {
 
 navigator.bluetooth = {};
 
+navigator.bluetooth.uuids = {};
+
+function canonicalUUID(uuidAlias) {
+  uuidAlias >>>= 0;  // Make sure the number is positive and 32 bits.
+  var strAlias = "0000000" + uuidAlias.toString(16);
+  strAlias = strAlias.substr(-8);
+  return strAlias + "-0000-1000-8000-00805f9b34fb"
+}
+navigator.bluetooth.uuids.canonicalUUID = canonicalUUID;
+
+navigator.bluetooth.uuids.service = {
+  alert_notification: canonicalUUID(0x1811),
+  battery_service: canonicalUUID(0x180F),
+  blood_pressure: canonicalUUID(0x1810),
+  current_time: canonicalUUID(0x1805),
+  cycling_power: canonicalUUID(0x1818),
+  cycling_speed_and_cadence: canonicalUUID(0x1816),
+  device_information: canonicalUUID(0x180A),
+  generic_access: canonicalUUID(0x1800),
+  generic_attribute: canonicalUUID(0x1801),
+  glucose: canonicalUUID(0x1808),
+  health_thermometer: canonicalUUID(0x1809),
+  heart_rate: canonicalUUID(0x180D),
+  human_interface_device: canonicalUUID(0x1812),
+  immediate_alert: canonicalUUID(0x1802),
+  link_loss: canonicalUUID(0x1803 ),
+  location_and_navigation: canonicalUUID(0x1819),
+  next_dst_change: canonicalUUID(0x1807),
+  phone_alert_status: canonicalUUID(0x180E),
+  reference_time_update: canonicalUUID(0x1806),
+  running_speed_and_cadence: canonicalUUID(0x1814),
+  scan_parameters: canonicalUUID(0x1813),
+  tx_power: canonicalUUID(0x1804),
+  user_data: canonicalUUID(0x181C),
+}
+
 // TODO: Handle the Bluetooth tree and opt_capture.
 var bluetoothListeners = new Map();  // type -> Set<listener>
 navigator.bluetooth.addEventListener = function(type, listener, opt_capture) {
@@ -319,8 +358,59 @@ navigator.bluetooth.dispatchEvent = function(event, target) {
   }
 }
 
-navigator.bluetooth.requestDevice = function(filters) {
-  return Promise.reject(new Error('Not Implemented'));
+navigator.bluetooth.requestDevice = function(filters, options) {
+  return new Promise(function(resolve, reject) {
+    filters = filters.map(function(filter) {
+      return {
+        services: filter.services.map(function(serviceUuid) {
+          if (uuidRegex.test(serviceUuid)) {
+            return serviceUuid;
+          } else {
+            var uuid = serviceNames[serviceUuid];
+            if (!uuid) {
+              throw new Error('"' + serviceUuid + '" is not a known service name.');
+            }
+            return uuid;
+          }
+        })
+      };
+    })
+
+    var subWindowUrl = new URL('request_device_window.html', importDocument.URL);
+
+    chrome.app.window.create(subWindowUrl.pathname, {
+      id: "navigator.bluetooth.requestDevice",
+      innerBounds: {width: 500, height: 400},
+    }, function(createdWindow) {
+      if (chrome.runtime.lastError) {
+        reject(chrome.runtime.lastError.message);
+        return;
+      }
+      var resolved = false;
+      createdWindow.contentWindow.requestDeviceInfo = {
+        filters: filters,
+        options: options,
+        origin: new URL(document.URL).origin,
+        originName: chrome.runtime.getManifest().name,
+        resolve: function(chromeDevice) {
+          resolved = true;
+          resolve(updateDevice(chromeDevice));
+        },
+        reject: function() {
+          resolved = true;
+          reject.apply(null, arguments);
+        },
+      };
+      createdWindow.onClosed.addListener(function() {
+        if (!resolved) {
+          reject(new Error('NotFoundError'));
+        }
+        chrome.bluetooth.stopDiscovery(function() {
+          chrome.runtime.lastError;  // Ignore errors.
+        });
+      })
+    })
+  });
 };
 
 var deviceCache = new Map();  // Address -> Device

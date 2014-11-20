@@ -18,6 +18,7 @@ body, #deviceSelector, #deviceSelector2 {
     overflow: auto;
 }
 h1 {
+    padding: 0 16px;
     font-size: 16px;
     font-weight: 400;
 }
@@ -34,4 +35,12 @@ h1 {
 core-icon {
     color: #1976d2;
     margin-right: 32px;
+}
+
+core-label {
+    display: block;
+}
+
+paper-checkbox {
+    margin: 12px 32px 12px 16px;
 }

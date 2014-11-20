@@ -374,7 +374,11 @@ navigator.bluetooth.requestDevice = function(filters, options) {
           }
         })
       };
-    })
+    });
+    options = {
+      optionalServices: options.optionalServices || [],
+      connectForServices: options.connectForServices || false,
+    };
 
     var subWindowUrl = new URL('request_device_window.html', importDocument.URL);
 

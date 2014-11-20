@@ -20,13 +20,14 @@ listing the GATT Service UUIDs you want to use:
 
 ## Known incomplete features
 
-`navigator.bluetooth.requestDevice` is absent.
-For now, use [`chrome.bluetooth.getDevices()`](https://developer.chrome.com/apps/bluetooth#method-getDevices)
-to retrieve devices known to the Chrome Apps system,
-and then open them in the Web Bluetooth polyfill
-with `navigator.bluetooth.getDevice(chromeDevice.address)`.
-
 Event bubbling and service change events aren't implemented.
 Listen for the `characteristicvaluechanged` event directly on `navigator.bluetooth`.
 
-None of the UUID constants are defined.
+Only the service UUID constants are defined.
+
+## Extensions
+
+`navigator.bluetooth.requestDevice` extends [`RequestDeviceOptions`](https://webbluetoothcg.github.io/web-bluetooth/#idl-def-RequestDeviceOptions)
+to include a `connectForServices` boolean,
+which selects between filtering on maybe only the advertised GATT services,
+vs discovering all services on the device before filtering.

@@ -17,7 +17,6 @@ limitations under the License.
 (function () {
 'use strict';
 
-var importDocument = document.currentScript.ownerDocument;
 var uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
 // https://webbluetoothcg.github.io/web-bluetooth/ interface
@@ -356,65 +355,6 @@ navigator.bluetooth.dispatchEvent = function(event, target) {
   } finally {
     delete event[dispatchSymbol];
   }
-}
-
-navigator.bluetooth.requestDevice = function(filters, options) {
-  return new Promise(function(resolve, reject) {
-    filters = filters.map(function(filter) {
-      return {
-        services: filter.services.map(function(serviceUuid) {
-          if (uuidRegex.test(serviceUuid)) {
-            return serviceUuid;
-          } else {
-            var uuid = serviceNames[serviceUuid];
-            if (!uuid) {
-              throw new Error('"' + serviceUuid + '" is not a known service name.');
-            }
-            return uuid;
-          }
-        })
-      };
-    });
-    options = {
-      optionalServices: options.optionalServices || [],
-      connectForServices: options.connectForServices || false,
-    };
-
-    var subWindowUrl = new URL('request_device_window.html', importDocument.URL);
-
-    chrome.app.window.create(subWindowUrl.pathname, {
-      id: "navigator.bluetooth.requestDevice",
-      innerBounds: {width: 500, height: 400},
-    }, function(createdWindow) {
-      if (chrome.runtime.lastError) {
-        reject(chrome.runtime.lastError.message);
-        return;
-      }
-      var resolved = false;
-      createdWindow.contentWindow.requestDeviceInfo = {
-        filters: filters,
-        options: options,
-        origin: new URL(document.URL).origin,
-        originName: chrome.runtime.getManifest().name,
-        resolve: function(chromeDevice) {
-          resolved = true;
-          resolve(updateDevice(chromeDevice));
-        },
-        reject: function() {
-          resolved = true;
-          reject.apply(null, arguments);
-        },
-      };
-      createdWindow.onClosed.addListener(function() {
-        if (!resolved) {
-          reject(new Error('NotFoundError'));
-        }
-        chrome.bluetooth.stopDiscovery(function() {
-          chrome.runtime.lastError;  // Ignore errors.
-        });
-      })
-    })
-  });
 };
 
 var deviceCache = new Map();  // Address -> Device
@@ -425,6 +365,7 @@ navigator.bluetooth.getDevice = function(deviceAddress) {
       return updateDevice(chromeDevice);
     });
 };
+
 function updateDevice(chromeDevice) {
   var device = deviceCache.get(chromeDevice.address);
   if (!device) {
@@ -594,5 +535,49 @@ function callChromeFunction(fn) {
     fn.apply(undefined, args);
   });
 };
+
+Polymer('web-bluetooth', {
+  ready: function() {
+    var self = this;
+    navigator.bluetooth.requestDevice = function(filters, options) {
+      return new Promise(function(resolve, reject) {
+        filters = filters.map(function(filter) {
+          return {
+            services: filter.services.map(function(serviceUuid) {
+              if (uuidRegex.test(serviceUuid)) {
+                return serviceUuid;
+              } else {
+                var uuid = serviceNames[serviceUuid];
+                if (!uuid) {
+                  throw new Error('"' + serviceUuid + '" is not a known service name.');
+                }
+                return uuid;
+              }
+            })
+          };
+        });
+        options = {
+          optionalServices: options.optionalServices || [],
+          connectForServices: options.connectForServices || false,
+        };
+
+        var requestDeviceInfo = {
+          filters: filters,
+          options: options,
+          origin: new URL(document.URL).origin,
+          originName: chrome.runtime.getManifest().name,
+          resolve: function(chromeDevice) {
+            resolve(updateDevice(chromeDevice));
+          },
+          reject: function() {
+            reject.apply(null, arguments);
+          },
+        };
+
+        self.$.requestDeviceWindow.requestDevice(requestDeviceInfo);
+      });
+    };
+  }
+});
 
 })();

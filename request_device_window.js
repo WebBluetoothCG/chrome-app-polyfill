@@ -27,6 +27,7 @@ if (!Array.prototype.findIndex) {
     return -1;
   }
 }
+
 if (!Array.prototype.contains) {
   Array.prototype.contains = function(searchElement, fromIndex) {
     fromIndex = fromIndex || 0;
@@ -51,15 +52,15 @@ function uuidsMatchFilters(serviceUuids, filters) {
   });
 };
 
-function DeviceView(bluetoothDevice) {
+function DeviceView(bluetoothDevice, requestDeviceInfo) {
   var self = this;
 
   self.device = bluetoothDevice;
-  self.filters = window.requestDeviceInfo.filters;
-  self.options = window.requestDeviceInfo.options;
+  self.filters = requestDeviceInfo.filters;
+  self.options = requestDeviceInfo.options;
   self.address = self.device.address;
   self.updateFrom(bluetoothDevice);
-  self.initialUuids = self.device.uuids;
+  self.initialUuids = self.device.uuids || [];
   self.allUuids = self.initialUuids;
   self.matchesFilters = uuidsMatchFilters(self.initialUuids, self.filters);
   self.initiallyConnected = self.device.connected;
@@ -108,82 +109,90 @@ DeviceView.prototype.updateFrom = function(sourceDevice) {
   }
 }
 
-// Run at load instead of immediately so that the chrome.app.window.create
-// callback can add window properties first.
-addEventListener('load', function () {
+Polymer('request-device-window', {
+  closeDialog: function() {
+    this.$.deviceSelectorDialog.style.display = "none";
+    chrome.bluetooth.onDeviceAdded.removeListener(this.onDeviceAddedListener);
+    chrome.bluetooth.onDeviceChanged.removeListener(this.onDeviceChangedListener);
+    chrome.bluetooth.onDeviceRemoved.removeListener(this.onDeviceRemovedListener);
 
-  window.onerror = function(error) {
-    requestDeviceInfo.reject(error);
-    window.close();
-  }
-
-  var model = document.querySelector('#model');
-
-  model.cancelled = function() {
-    requestDeviceInfo.reject(new Error('NotFoundError'));
-    window.close();
-  };
-
-  model.selected = function() {
-    if (!model.$.deviceSelector.selected) {
+    chrome.bluetooth.stopDiscovery(function() {
+      chrome.runtime.lastError;  // Ignore errors.
+    });
+  },
+  cancelled: function() {
+    this.requestDeviceInfo.reject(new Error('NotFoundError'));
+    this.closeDialog();
+  },
+  selected: function() {
+    if (!this.$.deviceSelector.selected) {
       // Do nothing if nothing was selected.
       return;
     }
-    requestDeviceInfo.resolve(model.$.deviceSelector.selectedModel.device.device);
-    window.close();
-  }
-
-  model.selectPrevious = function() {
+    this.requestDeviceInfo.resolve(this.$.deviceSelector.selectedModel.device.device);
+    this.closeDialog();
+  },
+  selectPrevious: function() {
     this.$.deviceSelector.selectPrevious();
-  }
-  model.selectNext = function() {
+  },
+  selectNext: function() {
     this.$.deviceSelector.selectNext();
+  },
+  requestDevice: function(requestDeviceInfo) {
+    this.requestDeviceInfo = requestDeviceInfo;
+    this.devices = [];
+    this.origin = this.requestDeviceInfo.origin;
+    this.$.deviceSelectorDialog.style.display = "inline";
+
+    var self = this;
+    chrome.bluetooth.getDevices(function(devices) {
+      self.devices = devices.map(function(btDevice) {
+        return new DeviceView(btDevice, self.requestDeviceInfo);
+      });
+
+      self.onDeviceAddedListener = function(device) {
+        var index = findDeviceIndexByAddress(self.devices, device);
+        if (index != -1) {
+          console.error('chrome.bluetooth.onDeviceAdded called for existing device:', device);
+        }
+        self.devices.push(new DeviceView(device, self.requestDeviceInfo));
+      };
+
+      self.onDeviceChangedListener = function(device) {
+        var index = findDeviceIndexByAddress(self.devices, device);
+        if (index == -1) {
+          console.error('chrome.bluetooth.onDeviceChanged called for non-existent device:', device);
+        } else {
+          self.devices[index].updateFrom(device);
+        }
+      };
+
+      self.onDeviceRemovedListener = function(device) {
+        var index = findDeviceIndexByAddress(self.devices, device);
+        if (index == -1) {
+          console.error('chrome.bluetooth.onDeviceRemoved called for non-existent device:', device);
+        } else {
+          self.devices.splice(index, 1);
+        }
+      };
+
+      chrome.bluetooth.onDeviceAdded.addListener(self.onDeviceAddedListener);
+      chrome.bluetooth.onDeviceChanged.addListener(self.onDeviceChangedListener);
+      chrome.bluetooth.onDeviceRemoved.addListener(self.onDeviceRemovedListener);
+    });
+
+    chrome.bluetooth.stopDiscovery(function() {
+      // startDiscovery sometimes fails ("Starting discovery failed") because the
+      // app has already started discovery, but discovery isn't actually running.
+      // Stopping and starting works around this.
+      chrome.runtime.lastError;
+      chrome.bluetooth.startDiscovery(function() {
+        if (chrome.runtime.lastError) {
+          console.error(chrome.runtime.lastError.message);
+        }
+      });
+    });
   }
-
-  model.origin = requestDeviceInfo.origin;
-  model.devices = [];
-
-  chrome.bluetooth.getDevices(function(devices) {
-    model.devices = devices.map(function(btDevice) {
-      return new DeviceView(btDevice);
-    });
-
-    chrome.bluetooth.onDeviceAdded.addListener(function(device) {
-      var index = findDeviceIndexByAddress(model.devices, device);
-      if (index != -1) {
-        console.error('chrome.bluetooth.onDeviceAdded called for existing device:', device);
-      }
-      model.devices.push(new DeviceView(device));
-    });
-    chrome.bluetooth.onDeviceChanged.addListener(function(device) {
-      var index = findDeviceIndexByAddress(model.devices, device);
-      if (index == -1) {
-        console.error('chrome.bluetooth.onDeviceChanged called for non-existent device:', device);
-      } else {
-        model.devices[index].updateFrom(device);
-      }
-    });
-    chrome.bluetooth.onDeviceRemoved.addListener(function(device) {
-      var index = findDeviceIndexByAddress(model.devices, device);
-      if (index == -1) {
-        console.error('chrome.bluetooth.onDeviceRemoved called for non-existent device:', device);
-      } else {
-        model.devices.splice(index, 1);
-      }
-    });
-  });
-
-  chrome.bluetooth.stopDiscovery(function() {
-    // startDiscovery sometimes fails ("Starting discovery failed") because the
-    // app has already started discovery, but discovery isn't actually running.
-    // Stopping and starting works around this.
-    chrome.runtime.lastError;
-    chrome.bluetooth.startDiscovery(function() {
-      if (chrome.runtime.lastError) {
-        console.error(chrome.runtime.lastError.message);
-      }
-    });
-  });
-
 });
+
 })();

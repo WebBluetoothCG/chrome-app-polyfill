@@ -14,4 +14,12 @@ See the License for the specific language governing permissions and
 limitations under the License.
 -->
 
-<script src="bluetooth.js"></script>
+<link rel="import" href="request_device_window.html" />
+<link rel="import" href="../polymer/polymer.html">
+
+<polymer-element name="web-bluetooth">
+  <template>
+    <request-device-window id="requestDeviceWindow"></request-device-window>
+  </template>
+  <script src="bluetooth.js"></script>
+</polymer-element>

@@ -120,10 +120,12 @@ Polymer('request-device-window', {
       chrome.runtime.lastError;  // Ignore errors.
     });
   },
+
   cancelled: function() {
     this.requestDeviceInfo.reject(new Error('NotFoundError'));
     this.closeDialog();
   },
+
   selected: function() {
     if (!this.$.deviceSelector.selected) {
       // Do nothing if nothing was selected.
@@ -132,12 +134,15 @@ Polymer('request-device-window', {
     this.requestDeviceInfo.resolve(this.$.deviceSelector.selectedModel.device.device);
     this.closeDialog();
   },
+
   selectPrevious: function() {
     this.$.deviceSelector.selectPrevious();
   },
+
   selectNext: function() {
     this.$.deviceSelector.selectNext();
   },
+
   requestDevice: function(requestDeviceInfo) {
     this.requestDeviceInfo = requestDeviceInfo;
     this.devices = [];

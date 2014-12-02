@@ -382,20 +382,34 @@ navigator.bluetooth.requestDevice = function(filters, options) {
       connectForServices: options.connectForServices || false,
     };
 
+    var resolved = false;
     var requestDeviceInfo = {
       filters: filters,
       options: options,
       origin: new URL(document.URL).origin,
       originName: chrome.runtime.getManifest().name,
       resolve: function(chromeDevice) {
+        resolved = true;
         resolve(updateDevice(chromeDevice));
       },
       reject: function() {
+        resolved = true;
         reject.apply(null, arguments);
       },
     };
 
-   requestDeviceDialog.requestDevice(requestDeviceInfo);
+    var dialogClosedListener = function() {
+      if (!resolved) {
+        reject(new Error('NotFoundError'));
+      }
+      chrome.bluetooth.stopDiscovery(function() {
+        chrome.runtime.lastError;  // Ignore errors.
+      });
+      requestDeviceDialog.removeEventListener('core-overlay-close-completed', dialogClosedListener);
+    };
+
+    requestDeviceDialog.addEventListener('core-overlay-close-completed', dialogClosedListener);
+    requestDeviceDialog.requestDevice(requestDeviceInfo);
   });
 };
 

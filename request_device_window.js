@@ -137,22 +137,17 @@ Polymer('request-device-window', {
         self.devices.splice(index, 1);
       }
     };
-  },
 
-  closeDialog: function() {
-    this.$.deviceSelectorDialog.style.display = "none";
-    chrome.bluetooth.onDeviceAdded.removeListener(this.onDeviceAddedListener);
-    chrome.bluetooth.onDeviceChanged.removeListener(this.onDeviceChangedListener);
-    chrome.bluetooth.onDeviceRemoved.removeListener(this.onDeviceRemovedListener);
-
-    chrome.bluetooth.stopDiscovery(function() {
-      chrome.runtime.lastError;  // Ignore errors.
+    this.addEventListener('core-overlay-close-completed', function() {
+      chrome.bluetooth.onDeviceAdded.removeListener(self.onDeviceAddedListener);
+      chrome.bluetooth.onDeviceChanged.removeListener(self.onDeviceChangedListener);
+      chrome.bluetooth.onDeviceRemoved.removeListener(self.onDeviceRemovedListener);
     });
   },
 
   cancelled: function() {
     this.requestDeviceInfo.reject(new Error('NotFoundError'));
-    this.closeDialog();
+    this.$.deviceSelectorDialog.close();
   },
 
   selected: function() {
@@ -161,7 +156,7 @@ Polymer('request-device-window', {
       return;
     }
     this.requestDeviceInfo.resolve(this.$.deviceSelector.selectedModel.device.device);
-    this.closeDialog();
+    this.$.deviceSelectorDialog.close();
   },
 
   selectPrevious: function() {
@@ -176,7 +171,7 @@ Polymer('request-device-window', {
     this.requestDeviceInfo = requestDeviceInfo;
     this.devices = [];
     this.origin = this.requestDeviceInfo.origin;
-    this.$.deviceSelectorDialog.style.display = "inline";
+    this.$.deviceSelectorDialog.open();
 
     var self = this;
     chrome.bluetooth.getDevices(function(devices) {

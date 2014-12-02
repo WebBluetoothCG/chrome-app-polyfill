@@ -33,15 +33,6 @@ h1 {
     color: #888;
 }
 
-#deviceSelectorDialog {
-    left: 0;
-    top: 0;
-    margin: 2% 2% 2% 2%;
-    width: 96%;
-    height: 96%;
-    overflow: auto;
-}
-
 core-icon {
     color: #1976d2;
     margin-right: 32px;

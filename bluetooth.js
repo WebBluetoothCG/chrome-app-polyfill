@@ -358,7 +358,7 @@ navigator.bluetooth.dispatchEvent = function(event, target) {
 }
 
 
-var requestDeviceDialog = document.createElement('request-device-window');
+var requestDeviceDialog = document.createElement('web-bluetooth-request-device-dialog');
 document.body.appendChild(requestDeviceDialog);
 navigator.bluetooth.requestDevice = function(filters, options) {
   return new Promise(function(resolve, reject) {

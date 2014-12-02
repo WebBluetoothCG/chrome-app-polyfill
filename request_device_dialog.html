@@ -25,9 +25,9 @@ limitations under the License.
 <link rel="import" href="../paper-item/paper-item.html">
 <link rel="import" href="../polymer/polymer.html">
 
-<polymer-element name="request-device-window">
+<polymer-element name="web-bluetooth-request-device-dialog">
   <template id="bluetooth-request-device-model">
-    <link rel="stylesheet" href="request_device_window.css">
+    <link rel="stylesheet" href="request_device_dialog.css">
     <paper-action-dialog id="deviceSelectorDialog" heading="Select a bluetooth device">
       <h1>{{origin}} requests permission to control a device; select one:</h1>
       <core-selector id="deviceSelector" flex selectedAttribute="">
@@ -64,5 +64,5 @@ limitations under the License.
       <core-a11y-keys keys="esc" on-keys-pressed="{{cancelled}}"></core-a11y-keys>
     </paper-action-dialog>
   </template>
-  <script src="request_device_window.js"></script>
+  <script src="request_device_dialog.js"></script>
 </polymer-element>

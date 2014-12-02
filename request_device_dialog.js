@@ -109,7 +109,7 @@ DeviceView.prototype.updateFrom = function(sourceDevice) {
   }
 }
 
-Polymer('request-device-window', {
+Polymer('web-bluetooth-request-device-dialog', {
   created: function() {
     var self = this;
     this.onDeviceAddedListener = function(device) {

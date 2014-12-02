@@ -110,6 +110,35 @@ DeviceView.prototype.updateFrom = function(sourceDevice) {
 }
 
 Polymer('request-device-window', {
+  created: function() {
+    var self = this;
+    this.onDeviceAddedListener = function(device) {
+      var index = findDeviceIndexByAddress(self.devices, device);
+      if (index != -1) {
+        console.error('chrome.bluetooth.onDeviceAdded called for existing device:', device);
+      }
+      self.devices.push(new DeviceView(device, self.requestDeviceInfo));
+    };
+
+    this.onDeviceChangedListener = function(device) {
+      var index = findDeviceIndexByAddress(self.devices, device);
+      if (index == -1) {
+        console.error('chrome.bluetooth.onDeviceChanged called for non-existent device:', device);
+      } else {
+        self.devices[index].updateFrom(device);
+      }
+    };
+
+    this.onDeviceRemovedListener = function(device) {
+      var index = findDeviceIndexByAddress(self.devices, device);
+      if (index == -1) {
+        console.error('chrome.bluetooth.onDeviceRemoved called for non-existent device:', device);
+      } else {
+        self.devices.splice(index, 1);
+      }
+    };
+  },
+
   closeDialog: function() {
     this.$.deviceSelectorDialog.style.display = "none";
     chrome.bluetooth.onDeviceAdded.removeListener(this.onDeviceAddedListener);
@@ -154,32 +183,6 @@ Polymer('request-device-window', {
       self.devices = devices.map(function(btDevice) {
         return new DeviceView(btDevice, self.requestDeviceInfo);
       });
-
-      self.onDeviceAddedListener = function(device) {
-        var index = findDeviceIndexByAddress(self.devices, device);
-        if (index != -1) {
-          console.error('chrome.bluetooth.onDeviceAdded called for existing device:', device);
-        }
-        self.devices.push(new DeviceView(device, self.requestDeviceInfo));
-      };
-
-      self.onDeviceChangedListener = function(device) {
-        var index = findDeviceIndexByAddress(self.devices, device);
-        if (index == -1) {
-          console.error('chrome.bluetooth.onDeviceChanged called for non-existent device:', device);
-        } else {
-          self.devices[index].updateFrom(device);
-        }
-      };
-
-      self.onDeviceRemovedListener = function(device) {
-        var index = findDeviceIndexByAddress(self.devices, device);
-        if (index == -1) {
-          console.error('chrome.bluetooth.onDeviceRemoved called for non-existent device:', device);
-        } else {
-          self.devices.splice(index, 1);
-        }
-      };
 
       chrome.bluetooth.onDeviceAdded.addListener(self.onDeviceAddedListener);
       chrome.bluetooth.onDeviceChanged.addListener(self.onDeviceChangedListener);

@@ -1,0 +1,68 @@
+<!--
+Copyright 2014 Google Inc. All rights reserved.
+
+Licensed under the Apache License, Version 2.0 (the "License");
+you may not use this file except in compliance with the License.
+You may obtain a copy of the License at
+
+    http://www.apache.org/licenses/LICENSE-2.0
+
+Unless required by applicable law or agreed to in writing, software
+distributed under the License is distributed on an "AS IS" BASIS,
+WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+See the License for the specific language governing permissions and
+limitations under the License.
+-->
+
+<link rel="import" href="../core-a11y-keys/core-a11y-keys.html">
+<link rel="import" href="../core-icon/core-icon.html">
+<link rel="import" href="../core-icons/device-icons.html">
+<link rel="import" href="../core-label/core-label.html">
+<link rel="import" href="../core-selector/core-selector.html">
+<link rel="import" href="../paper-button/paper-button.html">
+<link rel="import" href="../paper-checkbox/paper-checkbox.html">
+<link rel="import" href="../paper-dialog/paper-action-dialog.html">
+<link rel="import" href="../paper-item/paper-item.html">
+<link rel="import" href="../polymer/polymer.html">
+
+<polymer-element name="web-bluetooth-request-device-dialog">
+  <template id="bluetooth-request-device-model">
+    <link rel="stylesheet" href="request_device_dialog.css">
+    <paper-action-dialog id="deviceSelectorDialog" heading="Select a bluetooth device">
+      <h1>{{origin}} requests permission to control a device; select one:</h1>
+      <core-selector id="deviceSelector" flex selectedAttribute="">
+        <template repeat="{{device in devices}}">
+          <template if="{{(showUnconnectable || device.connectable) && (ignoreFilter || device.matchesFilters)}}">
+            <paper-item name="{{device.address}}">
+              <core-icon
+                 icon="device:{{device.connected ? 'bluetooth-connected' : device.connectable ? 'bluetooth' : 'bluetooth-disabled'}}"
+                 alt="{{device.connected ? 'Connected' : device.connectable ? 'Connectable' : 'Unavailable'}}"></core-icon>
+              <div vertical>
+                <div class="name">{{device.name}}</div>
+                <div class="address">{{device.address}}</div>
+              </div>
+            </paper-item>
+          </template>
+        </template>
+      </core-selector>
+      <core-label layout horizontal center>
+        <paper-checkbox for checked="{{ignoreFilter}}"></paper-checkbox>
+        <div>Include devices that don't match the site's filter.</div>
+      </core-label>
+      <core-label layout horizontal center>
+        <paper-checkbox for checked="{{showUnconnectable}}"></paper-checkbox>
+        <div>Include devices that you can't connect to.</div>
+      </core-label>
+      <div relative layout horizontal>
+        <div flex></div>
+        <paper-button on-click="{{cancelled}}">Cancel</paper-button>
+        <paper-button on-click="{{selected}}" disabled?="{{!$.deviceSelector.selected}}">Select</paper-button>
+      </div>
+      <core-a11y-keys keys="up" on-keys-pressed="{{selectPrevious}}"></core-a11y-keys>
+      <core-a11y-keys keys="down" on-keys-pressed="{{selectNext}}"></core-a11y-keys>
+      <core-a11y-keys keys="enter" on-keys-pressed="{{selected}}"></core-a11y-keys>
+      <core-a11y-keys keys="esc" on-keys-pressed="{{cancelled}}"></core-a11y-keys>
+    </paper-action-dialog>
+  </template>
+  <script src="request_device_dialog.js"></script>
+</polymer-element>

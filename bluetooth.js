@@ -75,6 +75,8 @@ BluetoothDevice.prototype = {
                               self.address, {persistent: false}
       ).then(function() {
         self._connected = true;
+      }, function(e) {
+        throw NamedError('NetworkError', self + '.connect() failed: ' + e);
       });
   },
 
@@ -83,6 +85,8 @@ BluetoothDevice.prototype = {
     return callChromeFunction(chrome.bluetoothLowEnergy.disconnect, self.address
       ).then(function() {
         self._connected = false;
+      }, function(e) {
+        throw NamedError('NetworkError', self + '.disconnect() failed: ' + e);
       });
   },
 
@@ -99,6 +103,10 @@ BluetoothDevice.prototype = {
   getService: function(serviceUuid) {
     return firstOrNull(this.getAllServices([serviceUuid]))
   },
+
+  toString: function() {
+    return self.address;
+  }
 };
 
 function BluetoothGattService(webBluetoothDevice, chromeBluetoothService) {
@@ -334,7 +342,7 @@ navigator.bluetooth.removeEventListener = function(type, listener, opt_capture) 
 var dispatchSymbol = Symbol('dispatch');
 navigator.bluetooth.dispatchEvent = function(event, target) {
   if (event[dispatchSymbol]) {
-    ThrowName('InvalidStateError');
+    throw NamedError('InvalidStateError');
   }
   event[dispatchSymbol] = true;
   try {
@@ -370,7 +378,7 @@ navigator.bluetooth.requestDevice = function(filters, options) {
           } else {
             var uuid = serviceNames[serviceUuid];
             if (!uuid) {
-              throw new Error('"' + serviceUuid + '" is not a known service name.');
+              throw NamedError('SyntaxError', '"' + serviceUuid + '" is not a known service name.');
             }
             return uuid;
           }
@@ -400,7 +408,7 @@ navigator.bluetooth.requestDevice = function(filters, options) {
 
     var dialogClosedListener = function() {
       if (!resolved) {
-        reject(new Error('NotFoundError'));
+        reject(NamedError('NotFoundError', 'Cancelled'));
       }
       chrome.bluetooth.stopDiscovery(function() {
         chrome.runtime.lastError;  // Ignore errors.
@@ -566,10 +574,10 @@ function firstOrNull(promise) {
   });
 };
 
-function ThrowName(name) {
-  var e = new Error();
+function NamedError(name, message) {
+  var e = new Error(message || '');
   e.name = name;
-  throw e;
+  return e;
 };
 
 // Calls fn(arguments, callback) and returns a Promise that resolves when

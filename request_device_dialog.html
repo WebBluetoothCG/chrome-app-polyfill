@@ -31,15 +31,13 @@ limitations under the License.
       <link rel="stylesheet" href="request_device_dialog.css">
       <h1>{{origin}} requests permission to control a device; select one:</h1>
       <core-selector id="deviceSelector" flex selectedAttribute="">
-        <template repeat="{{device in devices}}">
-          <template if="{{device.matchesFilters}}">
-            <paper-item name="{{device.address}}">
-              <div vertical>
-                <div class="name">{{device.name}}</div>
-                <div class="address">{{device.address}}</div>
-              </div>
-            </paper-item>
-          </template>
+        <template repeat="{{device in matchedDevices}}">
+          <paper-item name="{{device.address}}">
+            <div vertical>
+              <div class="name">{{device.name}}</div>
+              <div class="address">{{device.address}}</div>
+            </div>
+          </paper-item>
         </template>
       </core-selector>
       <div relative layout horizontal>

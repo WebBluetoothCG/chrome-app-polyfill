@@ -83,6 +83,7 @@ Polymer('web-bluetooth-request-device-dialog', {
         console.error('chrome.bluetooth.onDeviceAdded called for existing device:', device);
       }
       self.devices.push(new DeviceView(device, self.requestDeviceInfo));
+      self.updateMatchedDevices();
     };
 
     this.onDeviceChangedListener = function(device) {
@@ -91,6 +92,7 @@ Polymer('web-bluetooth-request-device-dialog', {
         console.error('chrome.bluetooth.onDeviceChanged called for non-existent device:', device);
       } else {
         self.devices[index].updateFrom(device);
+        self.updateMatchedDevices();
       }
     };
 
@@ -100,6 +102,7 @@ Polymer('web-bluetooth-request-device-dialog', {
         console.error('chrome.bluetooth.onDeviceRemoved called for non-existent device:', device);
       } else {
         self.devices.splice(index, 1);
+        self.updateMatchedDevices();
       }
     };
 
@@ -107,6 +110,12 @@ Polymer('web-bluetooth-request-device-dialog', {
       chrome.bluetooth.onDeviceAdded.removeListener(self.onDeviceAddedListener);
       chrome.bluetooth.onDeviceChanged.removeListener(self.onDeviceChangedListener);
       chrome.bluetooth.onDeviceRemoved.removeListener(self.onDeviceRemovedListener);
+    });
+  },
+
+  updateMatchedDevices: function() {
+    this.matchedDevices = this.devices.filter(function(device) {
+      return device.matchesFilters;
     });
   },
 
@@ -143,6 +152,7 @@ Polymer('web-bluetooth-request-device-dialog', {
       self.devices = devices.map(function(btDevice) {
         return new DeviceView(btDevice, self.requestDeviceInfo);
       });
+      self.updateMatchedDevices();
 
       chrome.bluetooth.onDeviceAdded.addListener(self.onDeviceAddedListener);
       chrome.bluetooth.onDeviceChanged.addListener(self.onDeviceChangedListener);

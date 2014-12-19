@@ -27,7 +27,10 @@ limitations under the License.
 
 <polymer-element name="web-bluetooth-request-device-dialog">
   <template id="bluetooth-request-device-model">
-    <paper-action-dialog id="deviceSelectorDialog" heading="Select a bluetooth device">
+    <paper-action-dialog
+        id="deviceSelectorDialog"
+        heading="Select a bluetooth device"
+        on-core-overlay-close-completed="{{dialogClosed}}">
       <link rel="stylesheet" href="request_device_dialog.css">
       <h1>{{origin}} requests permission to control a device; select one:</h1>
       <core-selector id="deviceSelector" flex selectedAttribute="">

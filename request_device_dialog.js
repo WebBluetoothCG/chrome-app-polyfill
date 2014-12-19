@@ -105,12 +105,6 @@ Polymer('web-bluetooth-request-device-dialog', {
         self.updateMatchedDevices();
       }
     };
-
-    this.addEventListener('core-overlay-close-completed', function() {
-      chrome.bluetooth.onDeviceAdded.removeListener(self.onDeviceAddedListener);
-      chrome.bluetooth.onDeviceChanged.removeListener(self.onDeviceChangedListener);
-      chrome.bluetooth.onDeviceRemoved.removeListener(self.onDeviceRemovedListener);
-    });
   },
 
   updateMatchedDevices: function() {
@@ -119,8 +113,20 @@ Polymer('web-bluetooth-request-device-dialog', {
     });
   },
 
+  dialogClosed: function() {
+    var self = this;
+    if (self.rejectOnClose) {
+      var e = new Error('Cancelled');
+      e.name = 'NotFoundError';
+      self.requestDeviceInfo.reject(e);
+    }
+
+    chrome.bluetooth.onDeviceAdded.removeListener(self.onDeviceAddedListener);
+    chrome.bluetooth.onDeviceChanged.removeListener(self.onDeviceChangedListener);
+    chrome.bluetooth.onDeviceRemoved.removeListener(self.onDeviceRemovedListener);
+  },
+
   cancelled: function() {
-    this.requestDeviceInfo.reject(new Error('NotFoundError'));
     this.$.deviceSelectorDialog.close();
   },
 
@@ -129,6 +135,7 @@ Polymer('web-bluetooth-request-device-dialog', {
       // Do nothing if nothing was selected.
       return;
     }
+    this.rejectOnClose = false;
     this.requestDeviceInfo.resolve(this.$.deviceSelector.selectedModel.device.device);
     this.$.deviceSelectorDialog.close();
   },
@@ -143,6 +150,7 @@ Polymer('web-bluetooth-request-device-dialog', {
 
   requestDevice: function(requestDeviceInfo) {
     this.requestDeviceInfo = requestDeviceInfo;
+    this.rejectOnClose = true;
     this.devices = [];
     this.origin = this.requestDeviceInfo.origin;
     this.$.deviceSelectorDialog.open();

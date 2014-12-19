@@ -368,11 +368,11 @@ navigator.bluetooth.dispatchEvent = function(event, target) {
   }
 }
 
-
-var requestDeviceDialog = document.createElement('web-bluetooth-request-device-dialog');
-document.body.appendChild(requestDeviceDialog);
 navigator.bluetooth.requestDevice = function(filters, options) {
   return new Promise(function(resolve, reject) {
+    var requestDeviceDialog = document.createElement('web-bluetooth-request-device-dialog');
+    document.body.appendChild(requestDeviceDialog);
+
     filters = filters.map(function(filter) {
       return {
         services: filter.services.map(function(serviceUuid) {
@@ -417,6 +417,7 @@ navigator.bluetooth.requestDevice = function(filters, options) {
         chrome.runtime.lastError;  // Ignore errors.
       });
       requestDeviceDialog.removeEventListener('core-overlay-close-completed', dialogClosedListener);
+      document.body.removeChild(requestDeviceDialog);
     };
 
     requestDeviceDialog.addEventListener('core-overlay-close-completed', dialogClosedListener);

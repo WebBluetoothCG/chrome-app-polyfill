@@ -551,7 +551,7 @@ chrome.bluetoothLowEnergy.onCharacteristicValueChanged.addListener(function(chro
 //   webConstructor: the constructor of the web-side instances.
 //                   Will be passed the chrome-side instance, and may return a Promise.
 function getChildren(options) {
-  if (options.uuids !== undefined && options.uuids.length == undefined) {
+  if (typeof options.uuids === 'string') {
     options.uuids = [options.uuids];
   }
   return callChromeFunction(options.chromeSearchFunction, options.parentChromeId

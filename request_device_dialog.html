@@ -29,25 +29,42 @@ limitations under the License.
   <template>
     <paper-action-dialog
         id="deviceSelectorDialog"
-        heading="Select a bluetooth device"
+        backdrop
+        autoCloseDisabled
+        closeSelector=""
         on-core-overlay-close-completed="{{dialogClosed}}">
       <link rel="stylesheet" href="request_device_dialog.css">
-      <h1>{{origin}} requests permission to control a device; select one:</h1>
-      <core-selector id="deviceSelector" flex selectedAttribute="">
-        <template repeat="{{device in matchedDevices}}">
-          <paper-item name="{{device.address}}">
-            <div vertical>
-              <div class="name">{{device.name}}</div>
-              <div class="address">{{device.address}}</div>
+      <h1><span class="origin">{{origin}}</span> wants to control:</h1>
+      <div id="deviceScroller">
+        <div id="deviceList" relative vertical layout>
+          <core-selector id="deviceSelector" selectedAttribute="">
+            <template repeat="{{device in matchedDevices}}">
+              <paper-item name="{{device.address}}">
+                <div class="name" title="{{device.address}}">{{device.name}}</div>
+                <div flex></div>
+                <template if="{{matchedDevices.length > 1}}">
+                  <div class="distance">{{device.distance}}</div>
+                </template>
+              </paper-item>
+            </template>
+          </core-selector>
+          <template if="{{scanning}}">
+            <!-- This shows during the first TGAP(gen_disc_scan_min) of discovery (10.24 s in BT 4.1) -->
+            <paper-item id="spinner" noink flex horizontal layout center-center>
+              <paper-spinner active></paper-spinner>
+            </paper-item>
+          </template>
+          <template if="{{!scanning && matchedDevices.length == 0}}">
+            <!-- This shows after the first TGAP(gen_disc_scan_min) of discovery (10.24 s in BT 4.1) -->
+            <div id="notfound" fit vertical layout center-center>
+              <div>No devices found</div>
             </div>
-          </paper-item>
-        </template>
-      </core-selector>
-      <div relative layout horizontal>
-        <div flex></div>
-        <paper-button on-click="{{cancelled}}">Cancel</paper-button>
-        <paper-button on-click="{{selected}}" disabled?="{{!$.deviceSelector.selected}}">Select</paper-button>
+          </template>
+        </div>
       </div>
+      <paper-button affirmative on-click="{{cancelled}}">Cancel</paper-button>
+      <paper-button affirmative on-click="{{selected}}" disabled?="{{!$.deviceSelector.selected}}">Connect</paper-button>
+
       <core-a11y-keys keys="up" on-keys-pressed="{{selectPrevious}}"></core-a11y-keys>
       <core-a11y-keys keys="down" on-keys-pressed="{{selectNext}}"></core-a11y-keys>
       <core-a11y-keys keys="enter" on-keys-pressed="{{selected}}"></core-a11y-keys>

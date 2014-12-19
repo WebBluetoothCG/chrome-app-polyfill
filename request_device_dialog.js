@@ -71,6 +71,21 @@ DeviceView.prototype.updateFrom = function(sourceDevice) {
   });
   self.name = self.device.name;
   self.connected = self.device.connected;
+  // TODO(jyasskin): When path loss (Tx Power - RSSI) is available on
+  // sourceDevice, use that to update here.
+  self.updatePathLoss(0);
+}
+
+DeviceView.prototype.updatePathLoss = function(newPathLoss) {
+  if (newPathLoss === this.pathLoss) {
+    return;
+  }
+  this.pathLoss = newPathLoss;
+  // TODO(jyasskin): Use a threshold that's not totally made up.
+  if (this.pathLoss < 15) {
+    this.distance = "Near";
+  } else {
+    this.distance = "Far";
   }
 }
 
@@ -120,6 +135,7 @@ Polymer('web-bluetooth-request-device-dialog', {
       e.name = 'NotFoundError';
       self.requestDeviceInfo.reject(e);
     }
+    clearTimeout(self.stopScanningTimeout);
 
     chrome.bluetooth.onDeviceAdded.removeListener(self.onDeviceAddedListener);
     chrome.bluetooth.onDeviceChanged.removeListener(self.onDeviceChangedListener);
@@ -153,6 +169,7 @@ Polymer('web-bluetooth-request-device-dialog', {
     this.rejectOnClose = true;
     this.devices = [];
     this.origin = this.requestDeviceInfo.originName;
+    this.scanning = true;
     this.$.deviceSelectorDialog.open();
 
     var self = this;
@@ -175,7 +192,13 @@ Polymer('web-bluetooth-request-device-dialog', {
       chrome.bluetooth.startDiscovery(function() {
         if (chrome.runtime.lastError) {
           console.error(chrome.runtime.lastError.message);
+          self.scanning = false;
+          return;
         }
+        var T_GAP_gen_disc_scan_min = 10240;  // 10.24 seconds
+        self.stopScanningTimeout = setTimeout(function() {
+          self.scanning = false;
+        }, T_GAP_gen_disc_scan_min);
       });
     });
   }

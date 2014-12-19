@@ -61,40 +61,7 @@ function DeviceView(bluetoothDevice, requestDeviceInfo) {
   self.address = self.device.address;
   self.updateFrom(bluetoothDevice);
   self.initialUuids = self.device.uuids || [];
-  self.allUuids = self.initialUuids;
   self.matchesFilters = uuidsMatchFilters(self.initialUuids, self.filters);
-  self.initiallyConnected = self.device.connected;
-
-  // Try to connect, to populate the 'connectable' property.
-  chrome.bluetoothLowEnergy.connect(self.device.address, function() {
-    if (chrome.runtime.lastError) {
-      console.log("Could not connect to", self.device.address, chrome.runtime.lastError.message);
-      return;
-    }
-    chrome.bluetoothLowEnergy.getServices(self.device.address, function(services) {
-      if (chrome.runtime.lastError) {
-        console.error(chrome.runtime.lastError.message);
-        return;
-      }
-      self.allUuids = services.map(function(service) {
-        return services.isPrimary ? service.uuid : null;
-      }).filter(function(uuid) { return uuid !== null; });
-      if (self.options.connectForServices) {
-        // The real implementation would avoid connecting or discovering
-        // services if !connectForServices, but this is simpler, and will
-        // still let us see the result.
-        self.matchesFilters = uuidsMatchFilters(self.allUuids, self.filters);
-      }
-      if (!self.initiallyConnected) {
-        chrome.bluetoothLowEnergy.disconnect(self.device.address, function() {
-          if (chrome.runtime.lastError) {
-            console.error(chrome.runtime.lastError.message);
-            return;
-          }
-        });
-      }
-    });
-  })
 }
 
 DeviceView.prototype.updateFrom = function(sourceDevice) {
@@ -104,8 +71,6 @@ DeviceView.prototype.updateFrom = function(sourceDevice) {
   });
   self.name = self.device.name;
   self.connected = self.device.connected;
-  if (self.connected) {
-    self.connectable = true;
   }
 }
 

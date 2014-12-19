@@ -32,11 +32,8 @@ limitations under the License.
       <h1>{{origin}} requests permission to control a device; select one:</h1>
       <core-selector id="deviceSelector" flex selectedAttribute="">
         <template repeat="{{device in devices}}">
-          <template if="{{(showUnconnectable || device.connectable) && (ignoreFilter || device.matchesFilters)}}">
+          <template if="{{device.matchesFilters}}">
             <paper-item name="{{device.address}}">
-              <core-icon
-                 icon="device:{{device.connected ? 'bluetooth-connected' : device.connectable ? 'bluetooth' : 'bluetooth-disabled'}}"
-                 alt="{{device.connected ? 'Connected' : device.connectable ? 'Connectable' : 'Unavailable'}}"></core-icon>
               <div vertical>
                 <div class="name">{{device.name}}</div>
                 <div class="address">{{device.address}}</div>
@@ -45,14 +42,6 @@ limitations under the License.
           </template>
         </template>
       </core-selector>
-      <core-label layout horizontal center>
-        <paper-checkbox for checked="{{ignoreFilter}}"></paper-checkbox>
-        <div>Include devices that don't match the site's filter.</div>
-      </core-label>
-      <core-label layout horizontal center>
-        <paper-checkbox for checked="{{showUnconnectable}}"></paper-checkbox>
-        <div>Include devices that you can't connect to.</div>
-      </core-label>
       <div relative layout horizontal>
         <div flex></div>
         <paper-button on-click="{{cancelled}}">Cancel</paper-button>

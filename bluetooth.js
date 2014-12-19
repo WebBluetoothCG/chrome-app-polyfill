@@ -73,10 +73,13 @@ BluetoothDevice.prototype = {
     var self = this;
     return callChromeFunction(chrome.bluetoothLowEnergy.connect,
                               self.address, {persistent: false}
-      ).then(function() {
-        self._connected = true;
-      }, function(e) {
+      ).catch(function(e) {
+        if (e == "Already connected") {
+          return;  // This is a successful connect().
+        }
         throw NamedError('NetworkError', self + '.connect() failed: ' + e);
+      }).then(function() {
+        self._connected = true;
       });
   },
 

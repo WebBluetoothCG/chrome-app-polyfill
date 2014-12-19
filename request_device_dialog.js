@@ -152,7 +152,7 @@ Polymer('web-bluetooth-request-device-dialog', {
     this.requestDeviceInfo = requestDeviceInfo;
     this.rejectOnClose = true;
     this.devices = [];
-    this.origin = this.requestDeviceInfo.origin;
+    this.origin = this.requestDeviceInfo.originName;
     this.$.deviceSelectorDialog.open();
 
     var self = this;

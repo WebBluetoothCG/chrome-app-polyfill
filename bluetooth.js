@@ -21,7 +21,7 @@ if (navigator.bluetooth) {
   // navigator.bluetooth already exists; not polyfilling.
   return;
 }
-if (!chrome.bluetooth || !chrome.bluetoothLowEnergy) {
+if (!window.chrome || !chrome.bluetooth || !chrome.bluetoothLowEnergy) {
   console.warn("Not inside a Chrome App with the bluetooth and bluetoothLowEnergy permissions. " +
                "Can't polyfill Web Bluetooth.");
   return;

@@ -17,6 +17,16 @@ limitations under the License.
 (function () {
 'use strict';
 
+if (navigator.bluetooth) {
+  // navigator.bluetooth already exists; not polyfilling.
+  return;
+}
+if (!chrome.bluetooth || !chrome.bluetoothLowEnergy) {
+  console.warn("Not inside a Chrome App with the bluetooth and bluetoothLowEnergy permissions. " +
+               "Can't polyfill Web Bluetooth.");
+  return;
+}
+
 var uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
 // https://webbluetoothcg.github.io/web-bluetooth/ interface

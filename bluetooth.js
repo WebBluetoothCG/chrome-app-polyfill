@@ -17,8 +17,21 @@ limitations under the License.
 (function () {
 'use strict';
 
+function canonicalUUID(uuidAlias) {
+  uuidAlias >>>= 0;  // Make sure the number is positive and 32 bits.
+  var strAlias = "0000000" + uuidAlias.toString(16);
+  strAlias = strAlias.substr(-8);
+  return strAlias + "-0000-1000-8000-00805f9b34fb"
+}
+
 if (navigator.bluetooth) {
   // navigator.bluetooth already exists; not polyfilling.
+  if (!navigator.bluetooth.uuids) {
+    navigator.bluetooth.uuids = {};
+  }
+  if (!navigator.bluetooth.uuids.canonicalUUID) {
+    navigator.bluetooth.uuids.canonicalUUID = canonicalUUID;
+  }
   return;
 }
 if (!window.chrome || !chrome.bluetooth || !chrome.bluetoothLowEnergy) {
@@ -301,12 +314,6 @@ navigator.bluetooth = {};
 
 navigator.bluetooth.uuids = {};
 
-function canonicalUUID(uuidAlias) {
-  uuidAlias >>>= 0;  // Make sure the number is positive and 32 bits.
-  var strAlias = "0000000" + uuidAlias.toString(16);
-  strAlias = strAlias.substr(-8);
-  return strAlias + "-0000-1000-8000-00805f9b34fb"
-}
 navigator.bluetooth.uuids.canonicalUUID = canonicalUUID;
 
 navigator.bluetooth.uuids.service = {

@@ -61,7 +61,7 @@ BluetoothDevice.prototype = {
     this._uuids = chromeBluetoothDevice.uuids;
   },
 
-  get address() {
+  get instanceId() {
     return this._address;
   },
   get name() {
@@ -95,7 +95,7 @@ BluetoothDevice.prototype = {
   connect: function() {
     var self = this;
     return callChromeFunction(chrome.bluetoothLowEnergy.connect,
-                              self.address, {persistent: false}
+                              self._address, {persistent: false}
       ).catch(function(e) {
         if (e == "Already connected") {
           return;  // This is a successful connect().
@@ -108,7 +108,7 @@ BluetoothDevice.prototype = {
 
   disconnect: function() {
     var self = this;
-    return callChromeFunction(chrome.bluetoothLowEnergy.disconnect, self.address
+    return callChromeFunction(chrome.bluetoothLowEnergy.disconnect, self._address
       ).then(function() {
         self._connected = false;
       }, function(e) {
@@ -120,7 +120,7 @@ BluetoothDevice.prototype = {
     var self = this;
     return getChildren({
       chromeSearchFunction: chrome.bluetoothLowEnergy.getServices,
-      parentChromeId: self.address,
+      parentChromeId: self._address,
       uuids: serviceUuids,
       webConstructor: function(service) { return updateService(service); },
     });
@@ -131,7 +131,7 @@ BluetoothDevice.prototype = {
   },
 
   toString: function() {
-    return self.address;
+    return self.instanceId;
   }
 };
 

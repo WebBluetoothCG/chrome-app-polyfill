@@ -30,6 +30,8 @@ h1 .origin {
 
 #deviceList {
     min-height: 168px;
+    position: relative;
+    @apply(--layout-vertical);
 }
 
 #deviceList paper-item {
@@ -39,19 +41,23 @@ h1 .origin {
 #deviceList paper-item#spinner {
     /* Twice a normal item. */
     min-height: 96px;
+    @apply(--layout-horizontal --layout-center-center --layout-flex);
 }
 
 #deviceList .distance {
     color: #888;
 }
 
-.core-selected, #deviceList .core-selected .distance {
+.iron-selected, #deviceList .iron-selected .distance {
     color: #fff;
     background-color: #5695f4;
+}
+
+#notfound {
+    @apply(--layout-fit --layout-vertical --layout-center-center);
 }
 
 paper-button {
     font-size: 14px;
     font-weight: 500;
 }
-

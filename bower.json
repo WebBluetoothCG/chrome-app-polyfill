@@ -1,13 +1,21 @@
 {
   "name": "web-bluetooth-chrome-app",
   "description": "A polyfill for the Web Bluetooth API on top of the Chrome Apps Bluetooth APIs.",
-  "main": [ "bluetooth.html", "bluetooth.js" ],
+  "main": [
+    "bluetooth.html",
+    "bluetooth.js"
+  ],
   "moduleType": [
     "globals"
   ],
   "dependencies": {
-    "polymer": "Polymer/polymer#>=0.5.0",
-    "paper-elements": "Polymer/paper-elements#>=0.5.0"
+    "polymer": "Polymer/polymer#^1.0.2",
+    "paper-dialog": "PolymerElements/paper-dialog#^1.0.0",
+    "paper-item": "PolymerElements/paper-item#^1.0.1",
+    "paper-button": "PolymerElements/paper-button#^1.0.1",
+    "iron-selector": "PolymerElements/iron-selector#^1.0.2",
+    "iron-a11y-keys": "PolymerElements/iron-a11y-keys#^1.0.0",
+    "paper-spinner": "PolymerElements/paper-spinner#^1.0.1"
   },
   "keywords": [
     "bluetooth",

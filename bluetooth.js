@@ -433,11 +433,11 @@ navigator.bluetooth.requestDevice = function(filters, options) {
       chrome.bluetooth.stopDiscovery(function() {
         chrome.runtime.lastError;  // Ignore errors.
       });
-      requestDeviceDialog.removeEventListener('core-overlay-close-completed', dialogClosedListener);
+      requestDeviceDialog.removeEventListener('iron-overlay-closed', dialogClosedListener);
       document.body.removeChild(requestDeviceDialog);
     };
 
-    requestDeviceDialog.addEventListener('core-overlay-close-completed', dialogClosedListener);
+    requestDeviceDialog.addEventListener('iron-overlay-closed', dialogClosedListener);
     requestDeviceDialog.requestDevice(requestDeviceInfo);
   });
 };
@@ -542,7 +542,6 @@ function BluetoothEvent(type, initDict) {
   this.cancelable = !!initDict.cancelable;
 };
 BluetoothEvent.prototype = {
-  __proto__: Event.prototype,
   target: null,
   currentTarget: null,
   eventPhase: Event.NONE,

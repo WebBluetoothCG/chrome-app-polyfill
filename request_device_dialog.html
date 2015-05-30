@@ -14,62 +14,55 @@ See the License for the specific language governing permissions and
 limitations under the License.
 -->
 
-<link rel="import" href="../core-a11y-keys/core-a11y-keys.html">
-<link rel="import" href="../core-icon/core-icon.html">
-<link rel="import" href="../core-icons/device-icons.html">
-<link rel="import" href="../core-label/core-label.html">
-<link rel="import" href="../core-selector/core-selector.html">
+<link rel="import" href="../iron-a11y-keys/iron-a11y-keys.html">
+<link rel="import" href="../iron-flex-layout/iron-flex-layout.html">
+<link rel="import" href="../iron-selector/iron-selector.html">
 <link rel="import" href="../paper-button/paper-button.html">
-<link rel="import" href="../paper-checkbox/paper-checkbox.html">
-<link rel="import" href="../paper-dialog/paper-action-dialog.html">
+<link rel="import" href="../paper-dialog/paper-dialog.html">
 <link rel="import" href="../paper-item/paper-item.html">
+<link rel="import" href="../paper-spinner/paper-spinner.html">
 <link rel="import" href="../polymer/polymer.html">
 
-<polymer-element name="web-bluetooth-request-device-dialog">
+<dom-module id="web-bluetooth-request-device-dialog">
+  <link rel="import" type="css" href="request_device_dialog.css">
   <template>
-    <paper-action-dialog
+    <paper-dialog
         id="deviceSelectorDialog"
-        backdrop
-        autoCloseDisabled
-        closeSelector=""
-        on-core-overlay-close-completed="{{dialogClosed}}">
-      <link rel="stylesheet" href="request_device_dialog.css">
-      <h1><span class="origin">{{origin}}</span> wants to control:</h1>
-      <div id="deviceScroller">
-        <div id="deviceList" relative vertical layout>
-          <core-selector id="deviceSelector" selectedAttribute="">
-            <template repeat="{{device in matchedDevices}}">
+        modal
+        on-iron-overlay-closed="dialogClosed">
+      <h2><span class="origin">{{origin}}</span> wants to control:</h2>
+      <paper-dialog-scrollable>
+        <div id="deviceList">
+          <iron-selector id="deviceSelector" selected-item="{{selectedDevice}}">
+            <template is="dom-repeat" id="deviceRepeat" items="{{matchedDevices}}" as="device">
               <paper-item name="{{device.address}}">
                 <div class="name" title="{{device.address}}">{{device.name}}</div>
-                <div flex></div>
-                <template if="{{matchedDevices.length > 1}}">
-                  <div class="distance">{{device.distance}}</div>
-                </template>
+                <div class="flex"></div>
+                <div class="distance" hidden$="{{isSingleton(matchedDevices)}}"
+                     >{{device.distance}}</div>
               </paper-item>
             </template>
-          </core-selector>
-          <template if="{{scanning}}">
-            <!-- This shows during the first TGAP(gen_disc_scan_min) of discovery (10.24 s in BT 4.1) -->
-            <paper-item id="spinner" noink flex horizontal layout center-center>
-              <paper-spinner active></paper-spinner>
-            </paper-item>
-          </template>
-          <template if="{{!scanning && matchedDevices.length == 0}}">
-            <!-- This shows after the first TGAP(gen_disc_scan_min) of discovery (10.24 s in BT 4.1) -->
-            <div id="notfound" fit vertical layout center-center>
-              <div>No devices found</div>
-            </div>
-          </template>
+          </iron-selector>
+          <!-- This shows during the first TGAP(gen_disc_scan_min) of discovery (10.24 s in BT 4.1) -->
+          <paper-item id="spinner" hidden$="{{!scanning}}" noink>
+            <paper-spinner active$="{{scanning}}"></paper-spinner>
+          </paper-item>
+          <!-- This shows after the first TGAP(gen_disc_scan_min) of discovery (10.24 s in BT 4.1) -->
+          <div id="notfound" hidden$="{{!noDevicesFound(scanning, matchedDevices)}}">
+            <div>No devices found</div>
+          </div>
         </div>
+      </paper-dialog-scrollable>
+      <div class="buttons">
+        <paper-button dialog-dismiss on-click="cancelled">Cancel</paper-button>
+        <paper-button dialog-confirm on-click="selected" disabled$="{{!selectedDevice}}">Connect</paper-button>
       </div>
-      <paper-button affirmative on-click="{{cancelled}}">Cancel</paper-button>
-      <paper-button affirmative on-click="{{selected}}" disabled?="{{!$.deviceSelector.selected}}">Connect</paper-button>
 
-      <core-a11y-keys keys="up" on-keys-pressed="{{selectPrevious}}"></core-a11y-keys>
-      <core-a11y-keys keys="down" on-keys-pressed="{{selectNext}}"></core-a11y-keys>
-      <core-a11y-keys keys="enter" on-keys-pressed="{{selected}}"></core-a11y-keys>
-      <core-a11y-keys keys="esc" on-keys-pressed="{{cancelled}}"></core-a11y-keys>
-    </paper-action-dialog>
+      <iron-a11y-keys keys="up" on-keys-pressed="selectPrevious"></iron-a11y-keys>
+      <iron-a11y-keys keys="down" on-keys-pressed="selectNext"></iron-a11y-keys>
+      <iron-a11y-keys keys="enter" on-keys-pressed="selected"></iron-a11y-keys>
+      <iron-a11y-keys keys="esc" on-keys-pressed="cancelled"></iron-a11y-keys>
+    </paper-dialog>
   </template>
-  <script src="request_device_dialog.js"></script>
-</polymer-element>
+</dom-module>
+<script src="request_device_dialog.js"></script>

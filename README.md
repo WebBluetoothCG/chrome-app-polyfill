@@ -2,7 +2,7 @@
 
 The `bluetooth.js` script will add a `navigator.bluetooth` attribute that behaves as specified
 in the [Web Bluetooth specification](https://webbluetoothcg.github.io/web-bluetooth/),
-modulo bugs, incomplete features, and changes to the spec since the polyfill was implemented.
+modulo bugs, incomplete features, and **several significant changes to the spec** since the polyfill was implemented.
 We provide an HTML file for use with HTML Imports as `<link rel="import" href="bluetooth.html">`.
 
 To use this polyfill,

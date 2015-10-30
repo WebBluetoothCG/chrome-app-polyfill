@@ -316,6 +316,22 @@ navigator.bluetooth.uuids = {};
 
 navigator.bluetooth.uuids.canonicalUUID = canonicalUUID;
 
+function ResolveUUIDName(tableName) {
+  var table = navigator.bluetooth.uuids[tableName];
+  return function(name) {
+    if (typeof name==="number") {
+      return canonicalUUID(name);
+    } else if (uuidRegex.test(name)) {
+      return name;
+    } else if (table.hasOwnProperty(name)) {
+      return table[name];
+    } else {
+      throw new NamedError('SyntaxError', '"' + name + '" is not a known '+tableName+' name.');
+    }
+  }
+}
+
+
 navigator.bluetooth.uuids.service = {
   alert_notification: canonicalUUID(0x1811),
   battery_service: canonicalUUID(0x180F),
@@ -341,6 +357,8 @@ navigator.bluetooth.uuids.service = {
   tx_power: canonicalUUID(0x1804),
   user_data: canonicalUUID(0x181C),
 }
+
+navigator.bluetooth.uuids.getService = ResolveUUIDName('service');
 
 // TODO: Handle the Bluetooth tree and opt_capture.
 var bluetoothListeners = new Map();  // type -> Set<listener>
@@ -393,17 +411,7 @@ navigator.bluetooth.requestDevice = function(requestDeviceOptions) {
 
     filters = filters.map(function(filter) {
       return {
-        services: filter.services.map(function(serviceUuid) {
-          if (uuidRegex.test(serviceUuid)) {
-            return serviceUuid;
-          } else {
-            var uuid = serviceNames[serviceUuid];
-            if (!uuid) {
-              throw NamedError('SyntaxError', '"' + serviceUuid + '" is not a known service name.');
-            }
-            return uuid;
-          }
-        })
+        services: filter.services.map(navigator.bluetooth.uuids.getService)
       };
     });
     var options = {

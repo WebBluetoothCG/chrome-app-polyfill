@@ -385,7 +385,8 @@ navigator.bluetooth.dispatchEvent = function(event, target) {
   }
 }
 
-navigator.bluetooth.requestDevice = function(filters, options) {
+navigator.bluetooth.requestDevice = function(requestDeviceOptions) {
+  var filters = requestDeviceOptions.filters;
   return new Promise(function(resolve, reject) {
     var requestDeviceDialog = document.createElement('web-bluetooth-request-device-dialog');
     document.body.appendChild(requestDeviceDialog);
@@ -405,9 +406,9 @@ navigator.bluetooth.requestDevice = function(filters, options) {
         })
       };
     });
-    options = {
-      optionalServices: options.optionalServices || [],
-      connectForServices: options.connectForServices || false,
+    var options = {
+      optionalServices: requestDeviceOptions.optionalServices || [],
+      connectForServices: requestDeviceOptions.connectForServices || false,
     };
 
     var resolved = false;

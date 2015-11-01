@@ -26,11 +26,11 @@ function canonicalUUID(uuidAlias) {
 
 if (navigator.bluetooth) {
   // navigator.bluetooth already exists; not polyfilling.
-  if (!navigator.bluetooth.uuids) {
-    navigator.bluetooth.uuids = {};
+  if (!window.BluetoothUUID) {
+    window.BluetoothUUID = {};
   }
-  if (!navigator.bluetooth.uuids.canonicalUUID) {
-    navigator.bluetooth.uuids.canonicalUUID = canonicalUUID;
+  if (!window.BluetoothUUID.canonicalUUID) {
+    window.BluetoothUUID.canonicalUUID = canonicalUUID;
   }
   return;
 }
@@ -122,7 +122,7 @@ BluetoothDevice.prototype = {
       chromeSearchFunction: chrome.bluetoothLowEnergy.getServices,
       parentChromeId: self._address,
       uuids: serviceUuids,
-      uuidCanonicalizer: navigator.bluetooth.uuids.getService,
+      uuidCanonicalizer: window.BluetoothUUID.getService,
       webConstructor: function(service) { return updateService(service); },
     });
   },
@@ -162,7 +162,7 @@ BluetoothGattService.prototype = {
       chromeSearchFunction: chrome.bluetoothLowEnergy.getCharacteristics,
       parentChromeId: self.instanceId,
       uuids: characteristicUuids,
-      uuidCanonicalizer: navigator.bluetooth.uuids.getCharacteristic,
+      uuidCanonicalizer: window.BluetoothUUID.getCharacteristic,
       webConstructor: function(characteristic) { return updateCharacteristic(characteristic); },
     });
   },
@@ -177,7 +177,7 @@ BluetoothGattService.prototype = {
       chromeSearchFunction: chrome.bluetoothLowEnergy.getIncludedServices,
       parentChromeId: self.instanceId,
       uuids: serviceUuids,
-      uuidCanonicalizer: navigator.bluetooth.uuids.getService,
+      uuidCanonicalizer: window.BluetoothUUID.getService,
       webConstructor: function(service) { return updateService(service); },
     });
   },
@@ -232,7 +232,7 @@ BluetoothGattCharacteristic.prototype = {
       chromeSearchFunction: chrome.bluetoothLowEnergy.getDescriptors,
       parentChromeId: self.instanceId,
       uuids: descriptorUuids,
-      uuidCanonicalizer: navigator.bluetooth.uuids.getDescriptor,
+      uuidCanonicalizer: window.BluetoothUUID.getDescriptor,
       webConstructor: function(descriptor) { return updateDescriptor(descriptor); },
     });
   },
@@ -316,12 +316,12 @@ BluetoothGattDescriptor.prototype = {
 
 navigator.bluetooth = {};
 
-navigator.bluetooth.uuids = {};
+window.BluetoothUUID = {};
 
-navigator.bluetooth.uuids.canonicalUUID = canonicalUUID;
+window.BluetoothUUID.canonicalUUID = canonicalUUID;
 
 function ResolveUUIDName(tableName) {
-  var table = navigator.bluetooth.uuids[tableName];
+  var table = window.BluetoothUUID[tableName];
   return function(name) {
     if (typeof name==="number") {
       return canonicalUUID(name);
@@ -336,7 +336,7 @@ function ResolveUUIDName(tableName) {
 }
 
 
-navigator.bluetooth.uuids.service = {
+window.BluetoothUUID.service = {
   alert_notification: canonicalUUID(0x1811),
   automation_io: canonicalUUID(0x1815),
   battery_service: canonicalUUID(0x180F),
@@ -372,7 +372,7 @@ navigator.bluetooth.uuids.service = {
 }
 
 
-navigator.bluetooth.uuids.characteristic = {
+window.BluetoothUUID.characteristic = {
   "aerobic_heart_rate_lower_limit": canonicalUUID(0x2A7E),
   "aerobic_heart_rate_upper_limit": canonicalUUID(0x2A84),
   "aerobic_threshold": canonicalUUID(0x2A7F),
@@ -536,7 +536,7 @@ navigator.bluetooth.uuids.characteristic = {
   "wind_chill": canonicalUUID(0x2A79)
 };
 
-navigator.bluetooth.uuids.descriptor = {
+window.BluetoothUUID.descriptor = {
   "gatt.characteristic_extended_properties": canonicalUUID(0x2900),
   "gatt.characteristic_user_description": canonicalUUID(0x2901),
   "gatt.client_characteristic_configuration": canonicalUUID(0x2902),
@@ -552,9 +552,9 @@ navigator.bluetooth.uuids.descriptor = {
   "es_trigger_setting": canonicalUUID(0x290D)
 };
   
-navigator.bluetooth.uuids.getService = ResolveUUIDName('service');
-navigator.bluetooth.uuids.getCharacteristic = ResolveUUIDName('characteristic');
-navigator.bluetooth.uuids.getDescriptor = ResolveUUIDName('descriptor');
+window.BluetoothUUID.getService = ResolveUUIDName('service');
+window.BluetoothUUID.getCharacteristic = ResolveUUIDName('characteristic');
+window.BluetoothUUID.getDescriptor = ResolveUUIDName('descriptor');
 
 // TODO: Handle the Bluetooth tree and opt_capture.
 var bluetoothListeners = new Map();  // type -> Set<listener>
@@ -607,7 +607,7 @@ navigator.bluetooth.requestDevice = function(requestDeviceOptions) {
 
     filters = filters.map(function(filter) {
       return {
-        services: filter.services.map(navigator.bluetooth.uuids.getService)
+        services: filter.services.map(window.BluetoothUUID.getService)
       };
     });
     var options = {

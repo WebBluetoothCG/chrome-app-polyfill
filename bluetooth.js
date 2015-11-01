@@ -338,12 +338,17 @@ function ResolveUUIDName(tableName) {
 
 navigator.bluetooth.uuids.service = {
   alert_notification: canonicalUUID(0x1811),
+  automation_io: canonicalUUID(0x1815),
   battery_service: canonicalUUID(0x180F),
   blood_pressure: canonicalUUID(0x1810),
+  body_composition: canonicalUUID(0x181B),
+  bond_management: canonicalUUID(0x181E),
+  continuous_glucose_monitoring: canonicalUUID(0x181F),
   current_time: canonicalUUID(0x1805),
   cycling_power: canonicalUUID(0x1818),
   cycling_speed_and_cadence: canonicalUUID(0x1816),
   device_information: canonicalUUID(0x180A),
+  environmental_sensing: canonicalUUID(0x181A),
   generic_access: canonicalUUID(0x1800),
   generic_attribute: canonicalUUID(0x1801),
   glucose: canonicalUUID(0x1808),
@@ -351,15 +356,19 @@ navigator.bluetooth.uuids.service = {
   heart_rate: canonicalUUID(0x180D),
   human_interface_device: canonicalUUID(0x1812),
   immediate_alert: canonicalUUID(0x1802),
+  indoor_positioning: canonicalUUID(0x1821),
+  internet_protocol_support: canonicalUUID(0x1820),
   link_loss: canonicalUUID(0x1803 ),
   location_and_navigation: canonicalUUID(0x1819),
   next_dst_change: canonicalUUID(0x1807),
   phone_alert_status: canonicalUUID(0x180E),
+  pulse_oximeter: canonicalUUID(0x1822),
   reference_time_update: canonicalUUID(0x1806),
   running_speed_and_cadence: canonicalUUID(0x1814),
   scan_parameters: canonicalUUID(0x1813),
   tx_power: canonicalUUID(0x1804),
   user_data: canonicalUUID(0x181C),
+  weight_scale: canonicalUUID(0x181D)
 }
 
 

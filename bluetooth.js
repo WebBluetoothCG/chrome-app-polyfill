@@ -120,7 +120,7 @@ BluetoothDevice.prototype = {
       });
   },
 
-  getAllServices: function(serviceUuids) {
+  getPrimaryServices: function(serviceUuids) {
     var self = this;
     return getChildren({
       chromeSearchFunction: chrome.bluetoothLowEnergy.getServices,
@@ -131,8 +131,8 @@ BluetoothDevice.prototype = {
     });
   },
 
-  getService: function(serviceUuid) {
-    return firstOrNull(this.getAllServices([serviceUuid]))
+  getPrimaryService: function(serviceUuid) {
+    return firstOrNull(this.getPrimaryServices([serviceUuid]))
   },
 
   toString: function() {

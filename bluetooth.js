@@ -92,6 +92,10 @@ BluetoothDevice.prototype = {
     return this._uuids;
   },
 
+  connectGATT: function() {
+    return this.connect().then(function() {return this}.bind(this));
+  },
+
   connect: function() {
     var self = this;
     return callChromeFunction(chrome.bluetoothLowEnergy.connect,

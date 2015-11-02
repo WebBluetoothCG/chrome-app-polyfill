@@ -101,7 +101,7 @@ BluetoothDevice.prototype = {
     return callChromeFunction(chrome.bluetoothLowEnergy.connect,
                               self._address, {persistent: false}
       ).catch(function(e) {
-        if (e == "Already connected") {
+        if (e == "Device is already connected" || e == "Already connected") {
           return;  // This is a successful connect().
         }
         throw NamedError('NetworkError', self + '.connect() failed: ' + e);

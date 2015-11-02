@@ -97,7 +97,7 @@ Polymer({
     devices: Array,
     matchedDevices: {
       type: Array,
-      computed: "computeMatchedDevices(devices)",
+      computed: "computeMatchedDevices(devices, devices.*)",
     },
     origin: String,
     scanning: Boolean,

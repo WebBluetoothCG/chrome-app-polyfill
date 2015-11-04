@@ -54,8 +54,8 @@ limitations under the License.
         </div>
       </paper-dialog-scrollable>
       <div class="buttons">
-        <paper-button dialog-dismiss on-click="cancelled">Cancel</paper-button>
-        <paper-button dialog-confirm on-click="selected" disabled$="{{!selectedDevice}}">Connect</paper-button>
+        <paper-button on-click="cancelled">Cancel</paper-button>
+        <paper-button on-click="selected" disabled$="{{!selectedDevice}}">Connect</paper-button>
       </div>
 
       <iron-a11y-keys keys="up" on-keys-pressed="selectPrevious"></iron-a11y-keys>

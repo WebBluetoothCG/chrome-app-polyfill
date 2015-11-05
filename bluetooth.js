@@ -42,13 +42,270 @@ if (!window.chrome || !chrome.bluetooth || !chrome.bluetoothLowEnergy) {
 
 var uuidRegex = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/;
 
+
+// Events:
+function BluetoothEvent(type, initDict) {
+  this.type = type;
+  initDict = initDict || {};
+  this.bubbles = !!initDict.bubbles;
+  this.cancelable = !!initDict.cancelable;
+
+  this._dispatching = false;
+  this._trusted = false;
+  this._stopImmediatePropagation = false;
+  this._stopPropagation = false;
+  this._canceled = false;
+
+  this.target = null;
+  this.currentTarget = null;
+  this.eventPhase = Event.NONE;
+
+  this.detail = initDict.detail;
+  this.timestamp = new Date().getTime();
+};
+BluetoothEvent.prototype = {
+  stopPropagation: function() {
+    this._stopPropagation = true;
+  },
+
+  stopImmediatePropagation: function() {
+    this._stopImmediatePropagation = true;
+    this._stopPropagation = true;
+  },
+
+  preventDefault: function() {
+    if (this.cancelable) {
+      this._canceled = true;
+    }
+  }
+};
+
+chrome.bluetoothLowEnergy.onCharacteristicValueChanged.addListener(function(chromeCharacteristic) {
+  updateCharacteristic(chromeCharacteristic).then(function(characteristic) {
+    characteristic.dispatchEvent(new BluetoothEvent('characteristicvaluechanged', {detail: {
+      value: characteristic.value
+    }}));
+  });
+});
+
+
+function BluetoothNode(parent) {
+  this._capturingListeners = {};
+  this._bubblingListeners = {};
+  this._parent = parent;
+  this._children = [];
+  this._eventHandlers = {};
+  if (parent) {
+    parent._children.push(this);
+  }
+}
+
+BluetoothNode.prototype = {
+  get parent() {
+    return this._parent;
+  },
+  get children() {
+    return this._children;
+  },
+  get root() {
+    return this._parent ? this._parent.root : this;
+  },
+
+  removeEventListener: function(type, listener, opt_useCapture) {
+    if (!listener) {
+      return;
+    }
+
+    var listeners = opt_useCapture ? this._capturingListeners : this._bubblingListeners;
+
+    var l = listeners[type] || [];
+    var i = l.indexOf(listener);
+    if (i >= 0) {
+      l.splice(i, 1);
+    }
+    listeners[type] = l;
+  },
+
+  addEventListener: function(type, listener, opt_useCapture) {
+    if (!listener) {
+      return;
+    }
+
+    var listeners = opt_useCapture ? this._capturingListeners : this._bubblingListeners;
+
+    var l = listeners[type] || [];
+    if (l.indexOf(listener) < 0) {
+      l.push(listener);
+    }
+    listeners[type] = l;
+  },
+
+  dispatchEvent: function(evt) {
+    if (!(evt instanceof BluetoothEvent)) {
+      throw new Error("Should be a BluetoothEvent");
+    }
+    if (evt._dispatching) {
+      throw new Error("Invalid state");
+    }
+    evt._trusted = true;
+
+    return this._doDispatch(evt);
+  },
+
+  _doDispatch: function(evt, opt_targetOverride) {
+    evt._dispatching = true;
+
+    evt.target = opt_targetOverride || this;
+
+    var n = evt.target;
+    var eventPath = [];
+    while (n.parent) {
+      n = n.parent;
+      eventPath.push(n);
+    }
+    eventPath = eventPath.reverse();
+
+    evt.eventPhase = Event.CAPTURING_PHASE;
+
+    for (let p of eventPath) {
+      if (evt._stopPropagation) {
+        break;
+      }
+
+      p._invokeListeners(evt);
+    }
+
+    evt.eventPhase = Event.AT_TARGET;
+    if (!evt._stopPropagation) {
+      evt.target._invokeListeners(evt);
+    }
+
+    if (evt.bubbles) {
+      eventPath = eventPath.reverse();
+      evt.eventPhase = Event.BUBBLING_PHASE;
+      for (let p of eventPath) {
+        if (evt._stopPropagation) {
+          break;
+        }
+        p._invokeListeners(evt);
+      }
+    }
+
+    evt._dispatching = false;
+    evt.eventPhase = 0;
+    evt.currentTarget = null;
+    return !evt._canceled;
+  },
+
+  _invokeListeners: function(evt) {
+    evt.currentTarget = this;
+
+    let listeners = (evt.eventPhase === Event.CAPTURING_PHASE ?
+            this._capturingListeners[evt.type] : this._bubblingListeners[evt.type]) || [];
+
+
+    for (let l of listeners) {
+      if (evt._stopImmediatePropagation) {
+        return;
+      }
+
+      try {
+        l.call(evt.currentTarget, evt);
+      } catch (e) {
+        console.error(e);
+      }
+
+    }
+  },
+
+  _getHandler: function(key) {
+    return this._eventHandlers[key];
+  },
+
+  _setHandler: function(key, handler) {
+    let old = this._getHandler(key);
+    if (old) {
+      this.removeEventListener(key, old);
+    }
+    this._eventHandlers[key] = handler;
+    if (handler) {
+      this.addEventListener(key, handler);
+    }
+  }
+
+};
+var _extend = function(c, obj) {
+  for (var i in obj) {
+    if (obj.hasOwnProperty(i)) {
+      var getter = obj.__lookupGetter__(i),
+          setter = obj.__lookupSetter__(i);
+      if (getter||setter) {
+        if (getter) {
+          c.__defineGetter__(i, getter);
+        }
+        if (setter) {
+          c.__defineSetter__(i, setter);
+        }
+      } else {
+        c[i] = obj[i];
+      }
+    }
+  }
+  return c;
+};
+
+
+function CharacteristicEventHandlersNode(parent) {
+  BluetoothNode.call(this, parent); // call super constructor.
+}
+CharacteristicEventHandlersNode.prototype = _extend(Object.create(BluetoothNode.prototype), {
+  get oncharacteristicvaluechanged() {
+    return this._getHandler("characteristicvaluechanged");
+  },
+
+  set oncharacteristicvaluechanged(handler) {
+    this._setHandler("characteristicvaluechanged", handler);
+  }
+});
+CharacteristicEventHandlersNode.prototype.constructor = CharacteristicEventHandlersNode;
+
+function ServiceEventHandlersNode(parent) {
+  CharacteristicEventHandlersNode.call(this, parent); // call super constructor.
+}
+ServiceEventHandlersNode.prototype = _extend(Object.create(CharacteristicEventHandlersNode.prototype),{
+  get onserviceadded() {
+    return this._getHandler("serviceadded");
+  },
+  set onserviceadded(handler) {
+    this._setHandler("serviceadded", handler);
+  },
+
+  get onservicechanged() {
+    return this._getHandler("servicechanged");
+  },
+  set onservicechanged(handler) {
+    this._setHandler("servicechanged", handler);
+  },
+
+  get onserviceremoved() {
+    return this._getHandler("serviceremoved");
+  },
+  set onserviceremoved(handler) {
+    this._setHandler("serviceremoved", handler);
+  }
+
+});
+ServiceEventHandlersNode.prototype.constructor = ServiceEventHandlersNode;
+
+
 // https://webbluetoothcg.github.io/web-bluetooth/ interface
 function BluetoothDevice(chromeDeviceAddress) {
+  ServiceEventHandlersNode.call(this, null);
   this._address = chromeDeviceAddress;
 };
 window.BluetoothDevice = BluetoothDevice;
 
-BluetoothDevice.prototype = {
+BluetoothDevice.prototype = _extend(Object.create(ServiceEventHandlersNode.prototype),{
   _updateFrom: function(chromeBluetoothDevice) {
     this._name = chromeBluetoothDevice.name;
     this._deviceClass = chromeBluetoothDevice.deviceClass
@@ -92,12 +349,16 @@ BluetoothDevice.prototype = {
     return this._uuids;
   },
 
+  connectGATT: function() {
+    return this.connect().then(function() {return this}.bind(this));
+  },
+
   connect: function() {
     var self = this;
     return callChromeFunction(chrome.bluetoothLowEnergy.connect,
                               self._address, {persistent: false}
       ).catch(function(e) {
-        if (e == "Already connected") {
+        if (e == "Device is already connected" || e == "Already connected") {
           return;  // This is a successful connect().
         }
         throw NamedError('NetworkError', self + '.connect() failed: ' + e);
@@ -116,7 +377,7 @@ BluetoothDevice.prototype = {
       });
   },
 
-  getAllServices: function(serviceUuids) {
+  getPrimaryServices: function(serviceUuids) {
     var self = this;
     return getChildren({
       chromeSearchFunction: chrome.bluetoothLowEnergy.getServices,
@@ -127,22 +388,24 @@ BluetoothDevice.prototype = {
     });
   },
 
-  getService: function(serviceUuid) {
-    return firstOrNull(this.getAllServices([serviceUuid]))
+  getPrimaryService: function(serviceUuid) {
+    return firstOrNull(this.getPrimaryServices([serviceUuid]))
   },
 
   toString: function() {
     return self.instanceId;
   }
-};
+});
+BluetoothDevice.prototype.constructor = BluetoothDevice;
 
 function BluetoothGattService(webBluetoothDevice, chromeBluetoothService) {
+  ServiceEventHandlersNode.call(this,webBluetoothDevice);
   this._device = webBluetoothDevice;
   this._chromeService = chromeBluetoothService;
 };
 window.BluetoothGattService = BluetoothGattService;
 
-BluetoothGattService.prototype = {
+BluetoothGattService.prototype = _extend(Object.create(ServiceEventHandlersNode.prototype),{
   get uuid() {
     return this._chromeService.uuid;
   },
@@ -185,17 +448,19 @@ BluetoothGattService.prototype = {
   getIncludedService: function(serviceUuid) {
     return firstOrNull(this.getAllIncludedServices([serviceUuid]))
   },
-};
+});
+BluetoothGattService.prototype.constructor = BluetoothGattService;
 
 var characteristicPropertyNames = ["broadcast", "read", "writeWithoutResponse", "write", "notify", "indicate", "authenticatedSignedWrites", "extendedProperties", "reliableWrite", "writableAuxiliaries"];
 
 function BluetoothGattCharacteristic(webBluetoothService, chromeCharacteristicId) {
+  CharacteristicEventHandlersNode.call(this, webBluetoothService);
   this._service = webBluetoothService;
   this._instanceId = chromeCharacteristicId;
 };
 window.BluetoothGattCharacteristic = BluetoothGattCharacteristic;
 
-BluetoothGattCharacteristic.prototype = {
+BluetoothGattCharacteristic.prototype = _extend(Object.create(CharacteristicEventHandlersNode.prototype),{
   _updateFrom: function(chromeBluetoothCharacteristic) {
     this._uuid = chromeBluetoothCharacteristic.uuid;
     this._value = chromeBluetoothCharacteristic.value;
@@ -271,7 +536,8 @@ BluetoothGattCharacteristic.prototype = {
                               self.instanceId
       ).then(function() {});
   },
-};
+});
+BluetoothGattCharacteristic.prototype.constructor = BluetoothGattCharacteristic;
 
 function BluetoothGattDescriptor(webBluetoothCharacteristic, chromeDescriptorId) {
   this._characteristic = webBluetoothCharacteristic;
@@ -556,48 +822,6 @@ window.BluetoothUUID.getService = ResolveUUIDName('service');
 window.BluetoothUUID.getCharacteristic = ResolveUUIDName('characteristic');
 window.BluetoothUUID.getDescriptor = ResolveUUIDName('descriptor');
 
-// TODO: Handle the Bluetooth tree and opt_capture.
-var bluetoothListeners = new Map();  // type -> Set<listener>
-navigator.bluetooth.addEventListener = function(type, listener, opt_capture) {
-  var typeListeners = bluetoothListeners.get(type);
-  if (!typeListeners) {
-    typeListeners = new Set();
-    bluetoothListeners.set(type, typeListeners);
-  }
-  typeListeners.add(listener);
-}
-navigator.bluetooth.removeEventListener = function(type, listener, opt_capture) {
-  var typeListeners = bluetoothListeners.get(type);
-  if (!typeListeners) {
-    return;
-  }
-  typeListeners.remove(listener);
-}
-var dispatchSymbol = Symbol('dispatch');
-navigator.bluetooth.dispatchEvent = function(event, target) {
-  if (event[dispatchSymbol]) {
-    throw NamedError('InvalidStateError');
-  }
-  event[dispatchSymbol] = true;
-  try {
-    event.isTrusted = false;
-    event.target = target;
-    event.eventPhase = Event.AT_TARGET;
-    var typeListeners = bluetoothListeners.get(event.type);
-    var handled = false;
-    if (typeListeners) {
-      for (var listener of typeListeners) {
-        handled = listener(event);
-        if (handled) {
-          break;
-        }
-      }
-    }
-    return handled;
-  } finally {
-    delete event[dispatchSymbol];
-  }
-}
 
 navigator.bluetooth.requestDevice = function(requestDeviceOptions) {
   var filters = requestDeviceOptions.filters;
@@ -607,7 +831,9 @@ navigator.bluetooth.requestDevice = function(requestDeviceOptions) {
 
     filters = filters.map(function(filter) {
       return {
-        services: filter.services.map(window.BluetoothUUID.getService)
+        services: filter.services&&filter.services.map(window.BluetoothUUID.getService),
+        name: filter.name,
+        namePrefix: filter.namePrefix
       };
     });
     var options = {
@@ -737,30 +963,6 @@ function updateDescriptor(chromeDescriptor) {
       return descriptor;
     });
 };
-
-// Events:
-
-function BluetoothEvent(type, initDict) {
-  this.type = type;
-  initDict = initDict || {};
-  this.bubbles = !!initDict.bubbles;
-  this.cancelable = !!initDict.cancelable;
-};
-BluetoothEvent.prototype = {
-  target: null,
-  currentTarget: null,
-  eventPhase: Event.NONE,
-};
-
-chrome.bluetoothLowEnergy.onCharacteristicValueChanged.addListener(function(chromeCharacteristic) {
-  updateCharacteristic(chromeCharacteristic).then(function(characteristic) {
-    var event = new BluetoothEvent('characteristicvaluechanged');
-    event.characteristic = characteristic;
-    event.value = characteristic.value;
-    navigator.bluetooth.dispatchEvent(event, characteristic);
-  });
-});
-
 
 // Local helper functions:
 

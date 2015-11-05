@@ -831,7 +831,9 @@ navigator.bluetooth.requestDevice = function(requestDeviceOptions) {
 
     filters = filters.map(function(filter) {
       return {
-        services: filter.services.map(window.BluetoothUUID.getService)
+        services: filter.services&&filter.services.map(window.BluetoothUUID.getService),
+        name: filter.name,
+        namePrefix: filter.namePrefix
       };
     });
     var options = {

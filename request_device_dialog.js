@@ -44,11 +44,12 @@ function findDeviceIndexByAddress(arr, device) {
   return arr.findIndex(function(elem) { return elem.address === device.address });
 }
 
-function uuidsMatchFilters(serviceUuids, filters) {
+function matchFilters(device, filters) {
   return filters.some(function(filter) {
-    return filter.services.every(function(service) {
-      return serviceUuids.contains(service);
-    });
+    return (!filter.services||filter.services.every(function(service) {
+      return device.uuids.contains(service);
+    }))&&(!filter.name||filter.name===device.name)
+        &&(!filter.namePrefix||device.name.indexOf(filter.namePrefix)===0);
   });
 };
 
@@ -61,7 +62,8 @@ function DeviceView(bluetoothDevice, requestDeviceInfo) {
   self.address = self.device.address;
   self.updateFrom(bluetoothDevice);
   self.initialUuids = self.device.uuids || [];
-  self.matchesFilters = uuidsMatchFilters(self.initialUuids, self.filters);
+  self.matchesFilters = matchFilters(self.device, self.filters);
+
 }
 
 DeviceView.prototype.updateFrom = function(sourceDevice) {

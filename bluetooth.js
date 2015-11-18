@@ -741,10 +741,13 @@ function updateDescriptor(chromeDescriptor) {
 // Events:
 
 function BluetoothEvent(type, initDict) {
-  this.type = type;
   initDict = initDict || {};
-  this.bubbles = !!initDict.bubbles;
-  this.cancelable = !!initDict.cancelable;
+  var e = new Event(type, initDict)
+  e.__proto__ = this.__proto__;
+  for (var key in initDict) {
+    e[key] = initDict[key];
+  }
+  return e;
 };
 BluetoothEvent.prototype = {
   target: null,
